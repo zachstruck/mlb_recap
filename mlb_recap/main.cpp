@@ -1,19 +1,19 @@
 #include <GLFW/glfw3.h>
 
-int main(void)
-{
-    GLFWwindow* window;
+#include <cstdlib>
 
+int main()
+{
     /* Initialize the library */
     if (!glfwInit())
-        return -1;
+        return EXIT_FAILURE;
 
     /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    if (!window)
+    GLFWwindow* window = glfwCreateWindow(640, 480, "Hello World", nullptr, nullptr);
+    if (window == nullptr)
     {
         glfwTerminate();
-        return -1;
+        return EXIT_FAILURE;
     }
 
     /* Make the window's context current */
@@ -33,5 +33,5 @@ int main(void)
     }
 
     glfwTerminate();
-    return 0;
+    return EXIT_SUCCESS;
 }
