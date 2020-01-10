@@ -49,36 +49,37 @@ int main()
 {
     try
     {
-        /* Initialize the library */
+        // Initialize GLFW in this scope
         GlfwInit const glfw;
 
-        /* Create a windowed mode window and its OpenGL context */
+        // Create a windowed mode window and its OpenGL context
         GLFWwindow* window = glfwCreateWindow(640, 480, "MLB Recap", nullptr, nullptr);
         if (window == nullptr)
         {
             throw std::runtime_error("Failed to create a window");
         }
 
-        /* Make the window's context current */
+        // Make the window's context current
         glfwMakeContextCurrent(window);
 
+        // Do GLAD loader
         if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
         {
             throw std::runtime_error("Failed to initialize GLAD");
         }
 
-        /* Loop until the user closes the window */
+        // Loop until the user closes the window
         while (!glfwWindowShouldClose(window))
         {
             processInput(window);
 
-            /* Render here */
+            // Render
             glClear(GL_COLOR_BUFFER_BIT);
 
-            /* Swap front and back buffers */
+            // Swap front and back buffers
             glfwSwapBuffers(window);
 
-            /* Poll for and process events */
+            // Poll for and process events
             glfwPollEvents();
         }
     }
