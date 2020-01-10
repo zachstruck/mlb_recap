@@ -1,3 +1,4 @@
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <cstdio>
@@ -52,6 +53,11 @@ int main()
 
         /* Make the window's context current */
         glfwMakeContextCurrent(window);
+
+        if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+        {
+            throw std::runtime_error("Failed to initialize GLAD");
+        }
 
         /* Loop until the user closes the window */
         while (!glfwWindowShouldClose(window))

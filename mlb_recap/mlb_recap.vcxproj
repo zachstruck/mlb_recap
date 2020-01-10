@@ -74,7 +74,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)ext\glad\glad_opengl_3_3_core\include;$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\lib-vc2019;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -82,7 +82,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)ext\glad\glad_opengl_3_3_core\include;$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\lib-vc2019;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -144,6 +144,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ext\glad\glad_opengl_3_3_core\src\glad.c" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
