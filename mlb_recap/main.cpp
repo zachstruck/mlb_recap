@@ -53,7 +53,7 @@ int main()
         GlfwInit const glfw;
 
         /* Create a windowed mode window and its OpenGL context */
-        GLFWwindow* window = glfwCreateWindow(640, 480, "Hello World", nullptr, nullptr);
+        GLFWwindow* window = glfwCreateWindow(640, 480, "MLB Recap", nullptr, nullptr);
         if (window == nullptr)
         {
             throw std::runtime_error("Failed to create a window");
