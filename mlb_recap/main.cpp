@@ -1,3 +1,4 @@
+#include <curl/curl.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -45,10 +46,21 @@ namespace
     }
 }
 
+namespace
+{
+    void doCurl()
+    {
+        CURL* const curl = curl_easy_init();
+        curl_easy_cleanup(curl);
+    }
+}
+
 int main()
 {
     try
     {
+        doCurl();
+
         // Initialize GLFW in this scope
         GlfwInit const glfw;
 
