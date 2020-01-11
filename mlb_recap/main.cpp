@@ -158,19 +158,28 @@ int main()
 
         // Some vertex data
         std::array const vertices = {
-            -0.5f, -0.5f, 0.0f, // left
-            +0.5f, -0.5f, 0.0f, // right
-            +0.0f, +0.5f, 0.0f  // top
+            +0.5f, +0.5f, 0.0f,  // top right
+            +0.5f, -0.5f, 0.0f,  // bottom right
+            -0.5f, -0.5f, 0.0f,  // bottom left
+            -0.5f, +0.5f, 0.0f,  // top left
+        };
+        std::array<GLuint, 6> const indices[] = {
+            0, 1, 3, // first triangle
+            1, 2, 3, // second triangle
         };
 
-        GLuint vbo, vao;
+        GLuint vbo, vao, ebo;
         glGenVertexArrays(1, &vao);
         glGenBuffers(1, &vbo);
+        glGenBuffers(1, &ebo);
 
         glBindVertexArray(vao);
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices->data(), GL_STATIC_DRAW);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
         glEnableVertexAttribArray(0);
@@ -191,7 +200,7 @@ int main()
             // Draw a triangle
             glUseProgram(shaderProgram);
             glBindVertexArray(vao);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
             // Swap front and back buffers
             glfwSwapBuffers(window);
@@ -199,6 +208,11 @@ int main()
             // Poll for and process events
             glfwPollEvents();
         }
+
+        // This needs RAII
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteBuffers(1, &ebo);
     }
     catch (std::exception const& ex)
     {
