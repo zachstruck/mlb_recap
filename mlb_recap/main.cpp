@@ -48,10 +48,39 @@ namespace
 
 namespace
 {
+    class CurlInit final
+    {
+    public:
+        CurlInit()
+        {
+            curl_ = curl_easy_init();
+
+            if (curl_ == nullptr)
+            {
+                throw std::runtime_error("Failed to initialize CURL");
+            }
+        }
+
+        // Disable copy semantics
+        CurlInit(CurlInit const& rhs) = delete;
+        CurlInit& operator=(CurlInit const& rhs) = delete;
+
+        // Disable move semantics
+        CurlInit(CurlInit&& rhs) noexcept = delete;
+        CurlInit& operator=(CurlInit&& rhs) noexcept = delete;
+
+        ~CurlInit()
+        {
+            curl_easy_cleanup(curl_);
+        }
+
+    private:
+        CURL* curl_{};
+    };
+
     void doCurl()
     {
-        CURL* const curl = curl_easy_init();
-        curl_easy_cleanup(curl);
+        CurlInit const curl;
     }
 }
 
