@@ -4,6 +4,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 
@@ -113,15 +115,13 @@ namespace
         return realsize;
     };
 
-    std::string getMlbFeed()
+    std::string loadFromInternet(std::string const& url)
     {
-        constexpr const char* const url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
-
         std::string data;
 
         CurlInit curl;
 
-        curl_easy_setopt(curl.get(), CURLOPT_URL, url);
+        curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, "libcurl-agent/1.0");
         curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, writeCallback);
         curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &data);
@@ -134,6 +134,36 @@ namespace
         }
 
         return data;
+    }
+
+    std::string loadFromLocal(std::filesystem::path const& filename)
+    {
+        std::ifstream file(filename, std::ios::in | std::ios::binary);
+
+        if (!file)
+        {
+            throw std::runtime_error("Failed to open file");
+        }
+
+        std::string data;
+
+        file.seekg(0, std::ios::end);
+        data.resize(file.tellg());
+        file.seekg(0, std::ios::beg);
+        file.read(data.data(), data.size());
+
+        return data;
+    }
+
+    std::string getMlbFeed()
+    {
+#if 0
+        constexpr const char* const url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
+        return loadFromInternet(url);
+#else
+        std::filesystem::path const filename = "../res/schedule_2018-06-10.json";
+        return loadFromLocal(filename);
+#endif
     }
 }
 
