@@ -1,6 +1,7 @@
 #include <curl/curl.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <nlohmann/json.hpp>
 
 #include <cstdio>
 #include <cstdlib>
@@ -167,11 +168,59 @@ namespace
     }
 }
 
+namespace
+{
+    class GameData final
+    {
+    public:
+        GameData() = default;
+
+        template <typename P1, typename P2, typename P3>
+        GameData(P1&& headline, P2&& subhead, P3&& photoUrl) :
+            headline(std::forward<P1>(headline)),
+            subhead(std::forward<P1>(subhead)),
+            photoUrl(std::forward<P1>(photoUrl))
+        {
+        }
+
+        std::string headline;
+        std::string subhead;
+        std::string photoUrl;
+    };
+
+    using MlbData = std::vector<GameData>;
+
+    MlbData parseMlb()
+    {
+        auto const json = nlohmann::json::parse(getMlbFeed());
+
+        MlbData mlbData;
+
+        auto const& jsonGames = json["dates"][0]["games"];
+
+        mlbData.reserve(jsonGames.size());
+        for (auto const& game : jsonGames)
+        {
+            auto const& jsonMlb = game["content"]["editorial"]["recap"]["mlb"];
+
+            jsonMlb["photo"]["cuts"]["270x154"]["src"];
+
+            mlbData.emplace_back(
+                jsonMlb["headline"].get<std::string>(),
+                jsonMlb["subhead"].get<std::string>(),
+                // Arbitrarily choosing a size here
+                jsonMlb["photo"]["cuts"]["270x154"]["src"].get<std::string>());
+        }
+
+        return mlbData;
+    }
+}
+
 int main()
 {
     try
     {
-        std::string const data = getMlbFeed();
+        MlbData const mblData = parseMlb();
 
         // Initialize GLFW in this scope
         GlfwInit const glfw;
