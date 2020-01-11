@@ -147,6 +147,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\ext\glad\glad_opengl_3_3_core\src\glad.c" />
+    <ClCompile Include="feed_loader.cpp" />
+    <ClCompile Include="feed_loader.hpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

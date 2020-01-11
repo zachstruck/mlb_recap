@@ -24,5 +24,11 @@
     <ClCompile Include="..\ext\glad\glad_opengl_3_3_core\src\glad.c">
       <Filter>Ext Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="feed_loader.hpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="feed_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
