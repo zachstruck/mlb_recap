@@ -1,0 +1,6 @@
+Package: zlib
+Version: 1.2.11-5
+Architecture: x64-windows
+Multi-Arch: same
+Abi: c898b486c9c843ed9fb7059874e6b57dd8ce4033
+Description: A compression library
