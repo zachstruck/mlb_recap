@@ -41,6 +41,11 @@ namespace
         }
     };
 
+    void frameBufferSizeCallback(GLFWwindow* window, int width, int height)
+    {
+        glViewport(0, 0, width, height);
+    }
+
     void processInput(GLFWwindow* window)
     {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -234,6 +239,9 @@ int main()
 
         // Make the window's context current
         glfwMakeContextCurrent(window);
+
+        // Resize the viewport as necessary
+        glfwSetFramebufferSizeCallback(window, frameBufferSizeCallback);
 
         // Do GLAD loader
         if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
