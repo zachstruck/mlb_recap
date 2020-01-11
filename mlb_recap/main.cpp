@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
+#include <string>
 
 namespace
 {
@@ -53,6 +54,13 @@ namespace
     public:
         CurlInit()
         {
+            CURLcode const code = curl_global_init(CURL_GLOBAL_ALL);
+
+            if (code != CURLE_OK)
+            {
+                throw std::runtime_error("Failed to initialize CURL");
+            }
+
             curl_ = curl_easy_init();
 
             if (curl_ == nullptr)
@@ -72,15 +80,60 @@ namespace
         ~CurlInit()
         {
             curl_easy_cleanup(curl_);
+
+            curl_global_cleanup();
+        }
+
+        CURL* get() noexcept
+        {
+            return curl_;
+        }
+
+        CURL const* get() const noexcept
+        {
+            return curl_;
         }
 
     private:
         CURL* curl_{};
     };
 
-    void doCurl()
+    std::size_t writeCallback(void* contents, std::size_t size, std::size_t nmemb, void* userp)
     {
-        CurlInit const curl;
+        auto& data = *static_cast<std::string*>(userp);
+
+        std::size_t const realsize = size * nmemb;
+
+        auto const* const contents_ = static_cast<char*>(contents);
+
+        data.insert(
+            data.cend(),
+            contents_, contents_ + realsize);
+
+        return realsize;
+    };
+
+    std::string getMlbFeed()
+    {
+        constexpr const char* const url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
+
+        std::string data;
+
+        CurlInit curl;
+
+        curl_easy_setopt(curl.get(), CURLOPT_URL, url);
+        curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, "libcurl-agent/1.0");
+        curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, writeCallback);
+        curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &data);
+
+        CURLcode const code = curl_easy_perform(curl.get());
+
+        if (code != CURLE_OK)
+        {
+            throw std::runtime_error("Failed to get URL");
+        }
+
+        return data;
     }
 }
 
@@ -88,7 +141,7 @@ int main()
 {
     try
     {
-        doCurl();
+        std::string const data = getMlbFeed();
 
         // Initialize GLFW in this scope
         GlfwInit const glfw;
@@ -127,6 +180,7 @@ int main()
     catch (std::exception const& ex)
     {
         std::printf("Error: %s\n", ex.what());
+        return EXIT_FAILURE;
     }
     catch (...)
     {
