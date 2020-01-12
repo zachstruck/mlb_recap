@@ -1,5 +1,7 @@
 #include "feed_loader.hpp"
 
+#include "file_utility.hpp"
+
 #include <curl/curl.h>
 
 #include <nlohmann/json.hpp>
@@ -97,25 +99,6 @@ namespace
         return data;
     }
 
-    std::string loadFromLocal(std::filesystem::path const& filename)
-    {
-        std::ifstream file(filename, std::ios::in | std::ios::binary);
-
-        if (!file)
-        {
-            throw std::runtime_error("Failed to open file");
-        }
-
-        std::string data;
-
-        file.seekg(0, std::ios::end);
-        data.resize(file.tellg());
-        file.seekg(0, std::ios::beg);
-        file.read(data.data(), data.size());
-
-        return data;
-    }
-
     std::string getMlbFeed()
     {
 #if 0
@@ -123,7 +106,7 @@ namespace
         return loadFromInternet(url);
 #else
         std::filesystem::path const filename = "../res/schedule_2018-06-10.json";
-        return loadFromLocal(filename);
+        return Mlb::readTextFile(filename);
 #endif
     }
 }
@@ -140,8 +123,6 @@ Mlb::MlbData Mlb::getFeedData()
     for (auto const& game : jsonGames)
     {
         auto const& jsonMlb = game["content"]["editorial"]["recap"]["mlb"];
-
-        jsonMlb["photo"]["cuts"]["270x154"]["src"];
 
         mlbData.emplace_back(
             jsonMlb["headline"].get<std::string>(),

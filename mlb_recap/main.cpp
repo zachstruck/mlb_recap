@@ -1,5 +1,7 @@
 #include "feed_loader.hpp"
 
+#include "shader.hpp"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -60,21 +62,6 @@ int main()
     {
         //Mlb::MlbData const mblData = Mlb::getFeedData();
 
-        const char* const vertexShaderSource =
-            "#version 330 core\n"
-            "layout (location = 0) in vec3 aPos;\n"
-            "void main()\n"
-            "{\n"
-            "    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
-            "}\0";
-        const char* const fragmentShaderSource =
-            "#version 330 core\n"
-            "out vec4 FragColor;\n"
-            "void main()\n"
-            "{\n"
-            "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-            "}\n\0";
-
         // Initialize GLFW in this scope
         GlfwInit const glfw;
 
@@ -97,64 +84,9 @@ int main()
             throw std::runtime_error("Failed to initialize GLAD");
         }
 
-        // Build and compile shader program
-
-        auto const checkShaderCompile = [](GLuint shader)
-        {
-            GLint success;
-            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-            if (success == GL_FALSE)
-            {
-                GLint logLength;
-                glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
-
-                std::string infoLog(logLength, '\0');
-                glGetShaderInfoLog(shader, infoLog.size(), nullptr, infoLog.data());
-
-                throw std::runtime_error(infoLog);
-            }
-        };
-
-        auto const checkShaderLink = [](GLuint program)
-        {
-            GLint success;
-            glGetProgramiv(program, GL_LINK_STATUS, &success);
-
-            if (success == GL_FALSE)
-            {
-                GLint logLength;
-                glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
-
-                std::string infoLog(logLength, '\0');
-                glGetShaderInfoLog(program, infoLog.size(), nullptr, infoLog.data());
-
-                throw std::runtime_error(infoLog);
-            }
-        };
-
-        // Vertex shader
-        GLuint const vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-        glCompileShader(vertexShader);
-        checkShaderCompile(vertexShader);
-
-        // Fragment shader
-        GLuint const fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-        glCompileShader(fragmentShader);
-        checkShaderCompile(fragmentShader);
-
-        // Link shaders
-        GLuint const shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, vertexShader);
-        glAttachShader(shaderProgram, fragmentShader);
-        glLinkProgram(shaderProgram);
-        checkShaderLink(shaderProgram);
-
-        // This needs RAII
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
+        Mlb::Shader const shader(
+            "../res/shaders/shader.vert",
+            "../res/shaders/shader.frag");
 
         // Some vertex data
         std::array const vertices = {
@@ -198,7 +130,7 @@ int main()
             glClear(GL_COLOR_BUFFER_BIT);
 
             // Draw a triangle
-            glUseProgram(shaderProgram);
+            shader.use();
             glBindVertexArray(vao);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 

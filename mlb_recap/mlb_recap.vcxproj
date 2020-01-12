@@ -149,7 +149,17 @@
     <ClCompile Include="..\ext\glad\glad_opengl_3_3_core\src\glad.c" />
     <ClCompile Include="feed_loader.cpp" />
     <ClCompile Include="feed_loader.hpp" />
+    <ClCompile Include="file_utility.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="shader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="file_utility.hpp" />
+    <ClInclude Include="shader.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\res\shaders\shader.frag" />
+    <None Include="..\res\shaders\shader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
