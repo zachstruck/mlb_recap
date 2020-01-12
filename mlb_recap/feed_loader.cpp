@@ -65,11 +65,11 @@ namespace
 
     std::size_t writeCallback(void* contents, std::size_t size, std::size_t nmemb, void* userp)
     {
-        auto& data = *static_cast<std::string*>(userp);
+        auto& data = *static_cast<std::vector<std::byte>*>(userp);
 
         std::size_t const realsize = size * nmemb;
 
-        auto const* const contents_ = static_cast<char*>(contents);
+        auto const* const contents_ = static_cast<std::byte*>(contents);
 
         data.insert(
             data.cend(),
@@ -78,9 +78,9 @@ namespace
         return realsize;
     };
 
-    std::string loadFromInternet(std::string const& url)
+    std::vector<std::byte> downloadFile(std::string const& url)
     {
-        std::string data;
+        std::vector<std::byte> data;
 
         CurlInit curl;
 
@@ -93,7 +93,7 @@ namespace
 
         if (code != CURLE_OK)
         {
-            throw std::runtime_error("Failed to get URL");
+            throw std::runtime_error("Failed to get URL: " + url);
         }
 
         return data;
@@ -103,7 +103,17 @@ namespace
     {
 #if 0
         constexpr const char* const url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
-        return loadFromInternet(url);
+
+        std::vector<std::byte> const data = downloadFile(url);
+
+        // Seemingly unable to move data around here
+        // Need to redesign the API to avoid this copy
+        std::string feed(data.size(), '\0');
+        std::transform(
+            data.begin(), data.end(),
+            feed.begin(),
+            [](auto const& ch) { return static_cast<char>(ch); });
+        return feed;
 #else
         std::filesystem::path const filename = "../res/schedule_2018-06-10.json";
         return Mlb::readTextFile(filename);
@@ -128,7 +138,7 @@ Mlb::MlbData Mlb::getFeedData()
             jsonMlb["headline"].get<std::string>(),
             jsonMlb["subhead"].get<std::string>(),
             // Arbitrarily choosing a size here
-            jsonMlb["photo"]["cuts"]["270x154"]["src"].get<std::string>());
+            downloadFile(jsonMlb["photo"]["cuts"]["270x154"]["src"].get<std::string>()));
     }
 
     return mlbData;

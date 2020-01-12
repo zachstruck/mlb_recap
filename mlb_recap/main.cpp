@@ -5,6 +5,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <stb/stb_image.h>
+
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -60,7 +62,20 @@ int main()
 {
     try
     {
-        //Mlb::MlbData const mblData = Mlb::getFeedData();
+        Mlb::MlbData const mlbData = Mlb::getFeedData();
+
+        int width, height;
+        int nrChannels;
+        stbi_set_flip_vertically_on_load(true);
+        stbi_uc* const pImage = stbi_load_from_memory(
+            reinterpret_cast<stbi_uc const*>(mlbData.front().photo.data()), mlbData.front().photo.size(),
+            &width, &height, &nrChannels,
+            STBI_rgb);
+
+        if (pImage == nullptr)
+        {
+            throw std::runtime_error("Failed to load image");
+        }
 
         // Initialize GLFW in this scope
         GlfwInit const glfw;
@@ -90,10 +105,11 @@ int main()
 
         // Some vertex data
         std::array const vertices = {
-            +0.5f, +0.5f, 0.0f,  // top right
-            +0.5f, -0.5f, 0.0f,  // bottom right
-            -0.5f, -0.5f, 0.0f,  // bottom left
-            -0.5f, +0.5f, 0.0f,  // top left
+            // positions          // texture coords
+             0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+             0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
+            -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
+            -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,   // top left 
         };
         std::array<GLuint, 6> const indices[] = {
             0, 1, 3, // first triangle
@@ -113,12 +129,27 @@ int main()
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices->data(), GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+        // Position
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(0 * sizeof(float)));
         glEnableVertexAttribArray(0);
+        // Texture
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // Load texture
 
-        glBindVertexArray(0);
+        GLuint texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Magically fixes the image
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pImage);
+        glGenerateMipmap(GL_TEXTURE_2D);
 
         // Loop until the user closes the window
         while (!glfwWindowShouldClose(window))
@@ -131,6 +162,7 @@ int main()
 
             // Draw a triangle
             shader.use();
+            glBindTexture(GL_TEXTURE_2D, texture);
             glBindVertexArray(vao);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
@@ -140,6 +172,9 @@ int main()
             // Poll for and process events
             glfwPollEvents();
         }
+
+        // This needs RAII
+        stbi_image_free(pImage);
 
         // This needs RAII
         glDeleteVertexArrays(1, &vao);

@@ -74,7 +74,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)ext\curl\curl-7.65.2_x64-windows\include;$(SolutionDir)ext\glad\glad_opengl_3_3_core\include;$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\include;$(SolutionDir)ext\json\json_for_modern_c++-3.7.3\include\single_include;$(SolutionDir)ext\zlib\zlib-1.2.11_x64-windows\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)ext\curl\curl-7.65.2_x64-windows\include;$(SolutionDir)ext\glad\glad_opengl_3_3_core\include;$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\include;$(SolutionDir)ext\json\json_for_modern_c++-3.7.3\include\single_include;$(SolutionDir)ext\stb\stb-787f1d6\include;$(SolutionDir)ext\zlib\zlib-1.2.11_x64-windows\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ext\curl\curl-7.65.2_x64-windows\debug\lib;$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\lib-vc2019;$(SolutionDir)ext\zlib\zlib-1.2.11_x64-windows\debug\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -82,7 +82,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)ext\curl\curl-7.65.2_x64-windows\include;$(SolutionDir)ext\glad\glad_opengl_3_3_core\include;$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\include;$(SolutionDir)ext\json\json_for_modern_c++-3.7.3\include\single_include;$(SolutionDir)ext\zlib\zlib-1.2.11_x64-windows\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)ext\curl\curl-7.65.2_x64-windows\include;$(SolutionDir)ext\glad\glad_opengl_3_3_core\include;$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\include;$(SolutionDir)ext\json\json_for_modern_c++-3.7.3\include\single_include;$(SolutionDir)ext\stb\stb-787f1d6\include;$(SolutionDir)ext\zlib\zlib-1.2.11_x64-windows\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ext\curl\curl-7.65.2_x64-windows\lib;$(SolutionDir)ext\glfw\glfw-3.3.1.bin.WIN64\lib-vc2019;$(SolutionDir)ext\zlib\zlib-1.2.11_x64-windows\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -152,6 +152,7 @@
     <ClCompile Include="file_utility.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="shader.cpp" />
+    <ClCompile Include="stb_image.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="file_utility.hpp" />
