@@ -78,11 +78,9 @@ namespace
         return realsize;
     };
 
-    std::vector<std::byte> downloadFile(std::string const& url)
+    std::vector<std::byte> downloadFile(CurlInit& curl, std::string const& url)
     {
         std::vector<std::byte> data;
-
-        CurlInit curl;
 
         curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, "libcurl-agent/1.0");
@@ -104,12 +102,12 @@ namespace
         return data;
     }
 
-    std::string getMlbFeed()
+    std::string getMlbFeed(CurlInit& curl)
     {
 #if 0
         constexpr const char* const url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
 
-        std::vector<std::byte> const data = downloadFile(url);
+        std::vector<std::byte> const data = downloadFile(curl, url);
 
         // Seemingly unable to move data around here
         // Need to redesign the API to avoid this copy
@@ -128,7 +126,10 @@ namespace
 
 Mlb::MlbData Mlb::getFeedData()
 {
-    auto const json = nlohmann::json::parse(getMlbFeed());
+    // Initialize libcurl once for loading everything from the internet feed
+    CurlInit curl;
+
+    auto const json = nlohmann::json::parse(getMlbFeed(curl));
 
     MlbData mlbData;
 
@@ -143,7 +144,7 @@ Mlb::MlbData Mlb::getFeedData()
             jsonMlb["headline"].get<std::string>(),
             jsonMlb["subhead"].get<std::string>(),
             // Arbitrarily choosing a size here
-            downloadFile(jsonMlb["photo"]["cuts"]["270x154"]["src"].get<std::string>()));
+            downloadFile(curl, jsonMlb["photo"]["cuts"]["270x154"]["src"].get<std::string>()));
     }
 
     return mlbData;
