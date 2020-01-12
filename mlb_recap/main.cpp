@@ -122,8 +122,6 @@ int main()
     {
         Mlb::MlbData const mlbData = Mlb::getFeedData();
 
-        ImageData const image(mlbData.front().photo);
-
         // Initialize GLFW in this scope
         GlfwInit const glfw;
 
@@ -150,53 +148,64 @@ int main()
             "../res/shaders/shader.vert",
             "../res/shaders/shader.frag");
 
-        // Some vertex data
-        std::array const vertices = {
-            // positions          // texture coords
-             0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-             0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-            -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-            -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,   // top left 
-        };
-        std::array<GLuint, 6> const indices[] = {
-            0, 1, 3, // first triangle
-            1, 2, 3, // second triangle
-        };
+        std::vector<GLuint> vbos(mlbData.size(), 0);
+        std::vector<GLuint> vaos(mlbData.size(), 0);
+        std::vector<GLuint> ebos(mlbData.size(), 0);
+        std::vector<GLuint> textures(mlbData.size(), 0);
 
-        GLuint vbo, vao, ebo;
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo);
+        for (std::size_t i = 0; i < mlbData.size(); ++i)
+        {
+            ImageData const image(mlbData[i].photo);
 
-        glBindVertexArray(vao);
+            // Some vertex data
+            std::array const vertices = {
+                // positions          // texture coords
+                 0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+                 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
+                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
+                -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,   // top left 
+            };
+            constexpr std::array<GLuint, 6> const indices[] = {
+                0, 1, 3, // first triangle
+                1, 2, 3, // second triangle
+            };
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+            auto& vbo = vbos[i];
+            auto& vao = vaos[i];
+            auto& ebo = ebos[i];
+            glGenVertexArrays(1, &vao);
+            glGenBuffers(1, &vbo);
+            glGenBuffers(1, &ebo);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices->data(), GL_STATIC_DRAW);
+            glBindVertexArray(vao);
 
-        // Position
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(0 * sizeof(float)));
-        glEnableVertexAttribArray(0);
-        // Texture
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
 
-        // Load texture
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices->data(), GL_STATIC_DRAW);
 
-        GLuint texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
+            // Position
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(0 * sizeof(float)));
+            glEnableVertexAttribArray(0);
+            // Texture
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            // Load texture
+            auto& texture = textures[i];
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
 
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Magically fixes the image
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width(), image.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, image.data());
-        glGenerateMipmap(GL_TEXTURE_2D);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Magically fixes the image
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width(), image.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, image.data());
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
 
         // Loop until the user closes the window
         while (!glfwWindowShouldClose(window))
@@ -207,11 +216,14 @@ int main()
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            // Draw a triangle
+            // Draw
             shader.use();
-            glBindTexture(GL_TEXTURE_2D, texture);
-            glBindVertexArray(vao);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+            for (std::size_t i = 0; i < mlbData.size(); ++i)
+            {
+                glBindTexture(GL_TEXTURE_2D, textures[i]);
+                glBindVertexArray(vaos[i]);
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+            }
 
             // Swap front and back buffers
             glfwSwapBuffers(window);
@@ -221,9 +233,9 @@ int main()
         }
 
         // This needs RAII
-        glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(1, &vbo);
-        glDeleteBuffers(1, &ebo);
+        glDeleteVertexArrays(vaos.size(), vaos.data());
+        glDeleteBuffers(vbos.size(), vbos.data());
+        glDeleteBuffers(ebos.size(), ebos.data());
     }
     catch (std::exception const& ex)
     {
