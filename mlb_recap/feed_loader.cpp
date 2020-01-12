@@ -89,6 +89,11 @@ namespace
         curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, writeCallback);
         curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &data);
 
+        // FIXME  Security
+        // Occasionally failing with error `CURLE_SSL_CONNECT_ERROR`
+        // Disable SSL verification for now
+        curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYHOST, 0L);
+
         CURLcode const code = curl_easy_perform(curl.get());
 
         if (code != CURLE_OK)
