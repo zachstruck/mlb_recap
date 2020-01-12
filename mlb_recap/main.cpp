@@ -157,13 +157,18 @@ int main()
         {
             ImageData const image(mlbData[i].photo);
 
+            // Fit eight clips by default
+            // with equal padding on the left and right screen edges
+            float const x_l = -0.975f + (i * 0.25f);
+            float const x_r = x_l + 0.20f;
+
             // Some vertex data
             std::array const vertices = {
-                // positions          // texture coords
-                 0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-                 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-                -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,   // top left 
+                // positions        // texture coords
+                x_r,  0.1f, 0.0f,   1.0f, 1.0f,   // top right
+                x_r, -0.1f, 0.0f,   1.0f, 0.0f,   // bottom right
+                x_l, -0.1f, 0.0f,   0.0f, 0.0f,   // bottom left
+                x_l,  0.1f, 0.0f,   0.0f, 1.0f,   // top left
             };
             constexpr std::array<GLuint, 6> const indices[] = {
                 0, 1, 3, // first triangle
