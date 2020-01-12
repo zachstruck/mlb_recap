@@ -10,6 +10,7 @@
 #include <array>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -58,24 +59,70 @@ namespace
     }
 }
 
+namespace
+{
+    class ImageData final
+    {
+    public:
+        ImageData(std::vector<std::byte> const& rawData)
+        {
+            int nrChannels;
+            stbi_set_flip_vertically_on_load(true);
+            data_.reset(stbi_load_from_memory(
+                reinterpret_cast<stbi_uc const*>(rawData.data()), rawData.size(),
+                &width_, &height_, &nrChannels,
+                formatType_));
+
+            if (data_ == nullptr)
+            {
+                throw std::runtime_error("Failed to load image");
+            }
+        }
+
+        unsigned char const* data() const noexcept
+        {
+            return data_.get();
+        }
+
+        int width() const noexcept
+        {
+            return width_;
+        }
+
+        int height() const noexcept
+        {
+            return height_;
+        }
+
+        auto formatType() const noexcept
+        {
+            return formatType_;
+        }
+
+    private:
+        constexpr static const auto formatType_ = STBI_rgb;
+
+        struct Deleter final
+        {
+            void operator()(stbi_uc* p) const noexcept
+            {
+                stbi_image_free(p);
+            }
+        };
+
+        std::unique_ptr<stbi_uc, Deleter> data_;
+        int width_{};
+        int height_{};
+    };
+}
+
 int main()
 {
     try
     {
         Mlb::MlbData const mlbData = Mlb::getFeedData();
 
-        int width, height;
-        int nrChannels;
-        stbi_set_flip_vertically_on_load(true);
-        stbi_uc* const pImage = stbi_load_from_memory(
-            reinterpret_cast<stbi_uc const*>(mlbData.front().photo.data()), mlbData.front().photo.size(),
-            &width, &height, &nrChannels,
-            STBI_rgb);
-
-        if (pImage == nullptr)
-        {
-            throw std::runtime_error("Failed to load image");
-        }
+        ImageData const image(mlbData.front().photo);
 
         // Initialize GLFW in this scope
         GlfwInit const glfw;
@@ -148,7 +195,7 @@ int main()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Magically fixes the image
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pImage);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width(), image.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, image.data());
         glGenerateMipmap(GL_TEXTURE_2D);
 
         // Loop until the user closes the window
@@ -172,9 +219,6 @@ int main()
             // Poll for and process events
             glfwPollEvents();
         }
-
-        // This needs RAII
-        stbi_image_free(pImage);
 
         // This needs RAII
         glDeleteVertexArrays(1, &vao);
