@@ -104,7 +104,6 @@ namespace
 
     std::string getMlbFeed(CurlInit& curl)
     {
-#if 0
         constexpr const char* const url = "http://statsapi.mlb.com/api/v1/schedule?hydrate=game(content(editorial(recap))),decisions&date=2018-06-10&sportId=1";
 
         std::vector<std::byte> const data = downloadFile(curl, url);
@@ -117,10 +116,6 @@ namespace
             feed.begin(),
             [](auto const& ch) { return static_cast<char>(ch); });
         return feed;
-#else
-        std::filesystem::path const filename = "res/schedule_2018-06-10.json";
-        return Mlb::readTextFile(filename);
-#endif
     }
 }
 
