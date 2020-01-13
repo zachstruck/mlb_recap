@@ -14,6 +14,8 @@ namespace Mlb
             std::filesystem::path const& vertexFilename,
             std::filesystem::path const& fragmentFilename);
 
+        GLuint id() const noexcept;
+
         void use() const noexcept;
 
     private:

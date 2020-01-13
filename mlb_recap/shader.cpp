@@ -74,6 +74,11 @@ Mlb::Shader::Shader(
     glDeleteShader(fragmentShader);
 }
 
+GLuint Mlb::Shader::id() const noexcept
+{
+    return shaderProgramId_;
+}
+
 void Mlb::Shader::use() const noexcept
 {
     glUseProgram(shaderProgramId_);

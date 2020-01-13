@@ -58,5 +58,8 @@
     <None Include="..\res\shaders\shader.frag">
       <Filter>Shader Files</Filter>
     </None>
+    <None Include="..\res\shaders\shaderScale.vert">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
