@@ -2,6 +2,9 @@
 
 #include "shader.hpp"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -17,6 +20,16 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+
+namespace
+{
+    constexpr const int defaultWidth = 1920 / 2;
+    constexpr const int defaultHeight = 1080 / 2;
+
+    // FIXME  Global state
+    Mlb::Shader const* pShaderProjection = nullptr;
+}
 
 namespace
 {
@@ -61,6 +74,13 @@ namespace
 
     void frameBufferSizeCallback(GLFWwindow* window, int width, int height)
     {
+        if (pShaderProjection != nullptr)
+        {
+            glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(width), 0.0f, static_cast<GLfloat>(height));
+            pShaderProjection->use();
+            glUniformMatrix4fv(glGetUniformLocation(pShaderProjection->id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        }
+
         glViewport(0, 0, width, height);
     }
 
@@ -174,6 +194,278 @@ namespace
     };
 }
 
+namespace
+{
+    struct Character final
+    {
+        GLuint textureId{};
+        glm::ivec2 size{};
+        glm::ivec2 bearing{};
+        GLuint advance{};
+    };
+
+    using CharacterSet = std::array<Character, 128>;
+
+    void renderHeadlineText(
+        GLuint vao, GLuint vbo,
+        CharacterSet const& charSet,
+        Mlb::Shader const& shader,
+        std::string_view text,
+        GLfloat x, // Centered midpoint
+        GLfloat y,
+        GLfloat scale,
+        GLfloat width, // Text width before ellipsis
+        glm::vec3 color)
+    {
+        shader.use();
+        glUniform3f(glGetUniformLocation(shader.id(), "textColor"), color.x, color.y, color.z);
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(vao);
+
+        GLfloat const ellipsesWidth = 3 * ((charSet['.'].advance >> 6) * scale);
+        std::size_t indexEnd = text.size();
+        // Determine the length
+        GLfloat len = 0.0f;
+        for (std::size_t i = 0; i < text.size(); ++i)
+        {
+            Character ch = charSet[text[i]];
+
+            len += (ch.advance >> 6) * scale;
+
+            if (len > width)
+            {
+                std::size_t j = i + 1;
+                for (/**/; j-- > 0 && len + ellipsesWidth > width; /**/)
+                {
+                    ch = charSet[text[j]];
+
+                    len -= (ch.advance >> 6) * scale;
+                }
+
+                len += ellipsesWidth;
+
+                // Guard against unsigned overflow
+                indexEnd = j <= indexEnd ? j : 0;
+
+                break;
+            }
+        }
+
+        // Iterate through all characters
+        GLfloat x_ = x - (len / 2.0f);
+        for (std::size_t i = 0; i < indexEnd; ++i)
+        {
+            Character const& ch = charSet[text[i]];
+
+            GLfloat const xpos = x_ + ch.bearing.x * scale;
+            GLfloat const ypos = y - (ch.size.y - ch.bearing.y) * scale;
+
+            GLfloat const w = ch.size.x * scale;
+            GLfloat const h = ch.size.y * scale;
+
+            // Update VBO for each character
+            GLfloat const vertices[6][4] = {
+                { xpos,     ypos + h,   0.0, 0.0 },
+                { xpos,     ypos,       0.0, 1.0 },
+                { xpos + w, ypos,       1.0, 1.0 },
+
+                { xpos,     ypos + h,   0.0, 0.0 },
+                { xpos + w, ypos,       1.0, 1.0 },
+                { xpos + w, ypos + h,   1.0, 0.0 },
+            };
+
+            // Render glyph texture over quad
+            glBindTexture(GL_TEXTURE_2D, ch.textureId);
+
+            // Update content of VBO memory
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+            // Render quad
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+            x_ += (ch.advance >> 6) * scale; // Bitshift by 6 to get value in pixels (2^6 = 64)
+        }
+
+        // Check if ellipses need to be appended
+        if (indexEnd != text.size())
+        {
+            for (std::size_t i = 0; i < 3; ++i)
+            {
+                Character const& ch = charSet['.'];
+
+                GLfloat const xpos = x_ + ch.bearing.x * scale;
+                GLfloat const ypos = y - (ch.size.y - ch.bearing.y) * scale;
+
+                GLfloat const w = ch.size.x * scale;
+                GLfloat const h = ch.size.y * scale;
+
+                // Update VBO for each character
+                GLfloat const vertices[6][4] = {
+                    { xpos,     ypos + h,   0.0, 0.0 },
+                    { xpos,     ypos,       0.0, 1.0 },
+                    { xpos + w, ypos,       1.0, 1.0 },
+
+                    { xpos,     ypos + h,   0.0, 0.0 },
+                    { xpos + w, ypos,       1.0, 1.0 },
+                    { xpos + w, ypos + h,   1.0, 0.0 },
+                };
+
+                // Render glyph texture over quad
+                glBindTexture(GL_TEXTURE_2D, ch.textureId);
+
+                // Update content of VBO memory
+                glBindBuffer(GL_ARRAY_BUFFER, vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                // Render quad
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+
+                // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+                x_ += (ch.advance >> 6)* scale; // Bitshift by 6 to get value in pixels (2^6 = 64)
+            }
+        }
+
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    bool isWhitespace(char ch) noexcept
+    {
+        switch (ch)
+        {
+        case ' ':
+            [[fallthrough]];
+        case '\f':
+            [[fallthrough]];
+        case '\n':
+            [[fallthrough]];
+        case '\r':
+            [[fallthrough]];
+        case '\t':
+            [[fallthrough]];
+        case '\v':
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    void renderSubheadingText(
+        GLuint vao, GLuint vbo,
+        CharacterSet const& charSet,
+        Mlb::Shader const& shader,
+        std::string_view text,
+        GLfloat x, // Centered midpoint
+        GLfloat y,
+        GLfloat scale,
+        GLfloat width, // Text width before wrapping
+        glm::vec3 color)
+    {
+        shader.use();
+        glUniform3f(glGetUniformLocation(shader.id(), "textColor"), color.x, color.y, color.z);
+        glActiveTexture(GL_TEXTURE0);
+        glBindVertexArray(vao);
+
+        // Cache this in `CharacterSet`
+        auto const lineHeight = [&charSet]
+        {
+            auto const tallestChar = *std::max_element(
+                charSet.begin(), charSet.end(),
+                [](auto const& lhs, auto const& rhs) {
+                    return lhs.size.y < rhs.size.y;
+                });
+            return tallestChar.size.y;
+        }();
+
+        std::size_t idx = 0;
+
+        while (idx < text.size())
+        {
+            auto const idxStart = idx;
+
+            // Determine the length
+            GLfloat len = 0.0f;
+            for (/**/; idx < text.size(); ++idx)
+            {
+                Character ch = charSet[text[idx]];
+
+                len += (ch.advance >> 6)* scale;
+
+                if (len > width)
+                {
+                    idx += 1;
+                    for (/**/; idx-- > 0 && !isWhitespace(text[idx]); /**/)
+                    {
+                        ch = charSet[text[idx]];
+
+                        len -= (ch.advance >> 6)* scale;
+                    }
+
+                    if (idx > text.size())
+                    {
+                        // Unsure how to handle the case
+                        // where even one character cannot be written
+                        return;
+                    }
+
+                    break;
+                }
+            }
+
+            // Iterate through all characters
+            std::size_t const indexEnd = idx;
+            GLfloat x_ = x - (len / 2.0f);
+            for (std::size_t i = idxStart; i < indexEnd; ++i)
+            {
+                Character const& ch = charSet[text[i]];
+
+                GLfloat const xpos = x_ + ch.bearing.x * scale;
+                GLfloat const ypos = y - (ch.size.y - ch.bearing.y) * scale;
+
+                GLfloat const w = ch.size.x * scale;
+                GLfloat const h = ch.size.y * scale;
+
+                // Update VBO for each character
+                GLfloat const vertices[6][4] = {
+                    { xpos,     ypos + h,   0.0, 0.0 },
+                    { xpos,     ypos,       0.0, 1.0 },
+                    { xpos + w, ypos,       1.0, 1.0 },
+
+                    { xpos,     ypos + h,   0.0, 0.0 },
+                    { xpos + w, ypos,       1.0, 1.0 },
+                    { xpos + w, ypos + h,   1.0, 0.0 },
+                };
+
+                // Render glyph texture over quad
+                glBindTexture(GL_TEXTURE_2D, ch.textureId);
+
+                // Update content of VBO memory
+                glBindBuffer(GL_ARRAY_BUFFER, vbo);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                // Render quad
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+
+                // Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+                x_ += (ch.advance >> 6)* scale; // Bitshift by 6 to get value in pixels (2^6 = 64)
+            }
+
+            y -= lineHeight * 1.05f; // Move down plus a little extra padding
+        }
+
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+}
+
 int main()
 {
     try
@@ -191,7 +483,7 @@ int main()
         GlfwInit const glfw;
 
         // Create a windowed mode window and its OpenGL context
-        GLFWwindow* window = glfwCreateWindow(640, 480, "MLB Recap", nullptr, nullptr);
+        GLFWwindow* window = glfwCreateWindow(defaultWidth, defaultHeight, "MLB Recap", nullptr, nullptr);
         if (window == nullptr)
         {
             throw std::runtime_error("Failed to create a window");
@@ -212,9 +504,27 @@ int main()
             throw std::runtime_error("Failed to initialize GLAD");
         }
 
+        // Define the viewport dimensions
+        glViewport(0, 0, defaultWidth, defaultHeight);
+
+        // Set OpenGL options
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         Mlb::Shader const shader(
             "../res/shaders/shader.vert",
             "../res/shaders/shader.frag");
+
+        Mlb::Shader const shaderFont(
+            "../res/shaders/font.vert",
+            "../res/shaders/font.frag");
+
+        glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(defaultWidth), 0.0f, static_cast<GLfloat>(defaultHeight));
+        shaderFont.use();
+        glUniformMatrix4fv(glGetUniformLocation(shaderFont.id(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        // Global pointer to this shader for updating the projection matrix
+        // whenever the window size changes
+        pShaderProjection = &shaderFont;
 
         // Setup the background image
         GLuint vboBg;
@@ -338,11 +648,95 @@ int main()
             glGenerateMipmap(GL_TEXTURE_2D);
         }
 
+        // Set up font
+        GLuint vaoFont;
+        GLuint vboFont;
+
+        FT_Library ft;
+        if (FT_Init_FreeType(&ft))
+        {
+            throw std::runtime_error("Failed to initialize freetype library");
+        }
+
+        std::filesystem::path const& fontFilename = "../res/fonts/Roboto-Regular.ttf";
+        FT_Face face;
+        if (FT_New_Face(ft, fontFilename.string().c_str(), 0, &face))
+        {
+            throw std::runtime_error("Failed to load font: " + fontFilename.string());
+        }
+
+        // Set the font size
+        FT_Set_Pixel_Sizes(face, 0, 24);
+
+        std::array<Character, 128> characters;
+
+        // Disable byte-alignment restriction
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+        for (GLubyte c = 0; c < 128; ++c)
+        {
+            if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+            {
+                characters[c] = {};
+                continue;
+            }
+
+            GLuint texture;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RED,
+                face->glyph->bitmap.width,
+                face->glyph->bitmap.rows,
+                0,
+                GL_RED,
+                GL_UNSIGNED_BYTE,
+                face->glyph->bitmap.buffer
+            );
+
+            // Set texture options
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            // Cache the glyph
+            characters[c] = Character{
+                texture,
+                glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+                glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                static_cast<GLuint>(face->glyph->advance.x),
+            };
+        }
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // This needs RAII
+        FT_Done_Face(face);
+        FT_Done_FreeType(ft);
+
+        {
+            auto& vao = vaoFont;
+            auto& vbo = vboFont;
+            glGenVertexArrays(1, &vao);
+            glGenBuffers(1, &vbo);
+
+            glBindVertexArray(vao);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, nullptr, GL_DYNAMIC_DRAW);
+
+            glEnableVertexAttribArray(0);
+
+            glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
+            glBindVertexArray(0);
+        }
+
         // Loop until the user closes the window
         while (!glfwWindowShouldClose(window))
         {
             // Render
-            glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
             // Draw
@@ -387,6 +781,57 @@ int main()
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
             }
 
+            // Font rendering
+            {
+                int width, height;
+                glfwGetWindowSize(window, &width, &height);
+
+                std::size_t const offset = selectedIndex - lowerViewableIndex;
+
+                float const textX = [&]
+                {
+                    float const frac = 2.0f / (viewableCount + 1);
+                    int const offset = selectedIndex - lowerViewableIndex;
+
+                    float const x = -(1.0f - frac) + offset * frac;
+
+                    return ((x + 1.0f) / 2.0f) * width;
+                }();
+
+                float const textWidth = 0.25f * width;
+
+                // White color
+                auto const textColor = glm::vec3(1.0f, 1.0f, 1.0f);
+
+                // Render headline text
+                {
+                    float const textY = 0.625f * height;
+                    renderHeadlineText(
+                        vaoFont, vboFont,
+                        characters,
+                        shaderFont,
+                        mlbData[selectedIndex].headline,
+                        textX, textY,
+                        1.0f,
+                        textWidth,
+                        textColor);
+                }
+
+                // Render subheading text
+                {
+                    float const textY = 0.35f * height;
+                    renderSubheadingText(
+                        vaoFont, vboFont,
+                        characters,
+                        shaderFont,
+                        mlbData[selectedIndex].subhead,
+                        textX, textY,
+                        0.8f,
+                        textWidth,
+                        textColor);
+                }
+            }
+
             // Swap front and back buffers
             glfwSwapBuffers(window);
 
@@ -403,6 +848,7 @@ int main()
         glDeleteBuffers(1, &vboPhoto);
         glDeleteBuffers(1, &eboPhoto);
         glDeleteTextures(textures.size(), textures.data());
+        glDeleteBuffers(1, &vboFont);
     }
     catch (std::exception const& ex)
     {
