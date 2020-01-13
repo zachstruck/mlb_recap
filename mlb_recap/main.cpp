@@ -79,6 +79,21 @@ namespace
             }
         }
 
+        ImageData(std::filesystem::path const& filename)
+        {
+            int nrChannels;
+            stbi_set_flip_vertically_on_load(true);
+            data_.reset(stbi_load(
+                filename.string().c_str(),
+                &width_, &height_, &nrChannels,
+                formatType_));
+
+            if (data_ == nullptr)
+            {
+                throw std::runtime_error("Failed to load image");
+            }
+        }
+
         unsigned char const* data() const noexcept
         {
             return data_.get();
@@ -148,6 +163,66 @@ int main()
             "../res/shaders/shader.vert",
             "../res/shaders/shader.frag");
 
+        // Setup the background image
+        GLuint vboBg;
+        GLuint vaoBg;
+        GLuint eboBg;
+        GLuint textureBg;
+
+        {
+            ImageData const image("../res/images/mlb_ballpark.jpg");
+
+            // Cover the entire background
+            std::array const vertices = {
+                // positions          // texture coords
+                +1.0f, +1.0f, 0.0f,   1.0f, 1.0f,   // top right
+                +1.0f, -1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+                -1.0f, -1.0f, 0.0f,   0.0f, 0.0f,   // bottom left
+                -1.0f, +1.0f, 0.0f,   0.0f, 1.0f,   // top left
+            };
+            constexpr std::array<GLuint, 6> const indices[] = {
+                0, 1, 3, // first triangle
+                1, 2, 3, // second triangle
+            };
+
+            auto& vbo = vboBg;
+            auto& vao = vaoBg;
+            auto& ebo = eboBg;
+            glGenVertexArrays(1, &vao);
+            glGenBuffers(1, &vbo);
+            glGenBuffers(1, &ebo);
+
+            glBindVertexArray(vao);
+
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices->data(), GL_STATIC_DRAW);
+
+            // Position
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(0 * sizeof(float)));
+            glEnableVertexAttribArray(0);
+            // Texture
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+
+            // Load texture
+            auto& texture = textureBg;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Magically fixes the image
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width(), image.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, image.data());
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
+        // Set up all the photo cuts
         std::vector<GLuint> vbos(mlbData.size(), 0);
         std::vector<GLuint> vaos(mlbData.size(), 0);
         std::vector<GLuint> ebos(mlbData.size(), 0);
@@ -223,6 +298,13 @@ int main()
 
             // Draw
             shader.use();
+            // Background
+            {
+                glBindTexture(GL_TEXTURE_2D, textureBg);
+                glBindVertexArray(vaoBg);
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+            }
+            // Photo cuts
             for (std::size_t i = 0; i < mlbData.size(); ++i)
             {
                 glBindTexture(GL_TEXTURE_2D, textures[i]);
@@ -238,9 +320,14 @@ int main()
         }
 
         // This needs RAII
+        glDeleteVertexArrays(1, &vaoBg);
+        glDeleteBuffers(1, &vboBg);
+        glDeleteBuffers(1, &eboBg);
+        glDeleteTextures(1, &textureBg);
         glDeleteVertexArrays(vaos.size(), vaos.data());
         glDeleteBuffers(vbos.size(), vbos.data());
         glDeleteBuffers(ebos.size(), ebos.data());
+        glDeleteTextures(textures.size(), textures.data());
     }
     catch (std::exception const& ex)
     {
