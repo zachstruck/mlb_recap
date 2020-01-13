@@ -10,6 +10,7 @@
 
 #include <stb/stb_image.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -22,6 +23,9 @@ namespace
     // FIXME  Global state
     std::size_t selectedIndex = 0;
     std::size_t maxSelectableIndex{};
+    std::size_t lowerViewableIndex{};
+    std::size_t upperViewableIndex{};
+    constexpr const std::size_t maxViewable = 5;
 }
 
 namespace
@@ -73,12 +77,24 @@ namespace
                 if (selectedIndex > 0)
                 {
                     --selectedIndex;
+
+                    if (selectedIndex < lowerViewableIndex)
+                    {
+                        --lowerViewableIndex;
+                        --upperViewableIndex;
+                    }
                 }
                 break;
             case GLFW_KEY_RIGHT:
                 if (selectedIndex < maxSelectableIndex)
                 {
                     ++selectedIndex;
+
+                    if (selectedIndex > upperViewableIndex)
+                    {
+                        ++lowerViewableIndex;
+                        ++upperViewableIndex;
+                    }
                 }
                 break;
             }
@@ -168,6 +184,8 @@ int main()
         maxSelectableIndex = !mlbData.empty() ?
             mlbData.size() - 1 :
             0;
+        lowerViewableIndex = 0;
+        upperViewableIndex = std::min(maxSelectableIndex, maxViewable - 1);
 
         // Initialize GLFW in this scope
         GlfwInit const glfw;
@@ -342,14 +360,12 @@ int main()
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
             }
             // Photo cuts
-            for (std::size_t i = 0; i < mlbData.size(); ++i)
+            assert(upperViewableIndex - lowerViewableIndex + 1 <= maxViewable);
+            for (std::size_t i = lowerViewableIndex; i <= upperViewableIndex; ++i)
             {
-                if (i >= 5)
-                {
-                    continue;
-                }
-
-                float const x_trans = (-2.0f / 3.0f) + i * (1.0f / 3.0f);
+                // FIXME
+                // Does not properly distribute equally fewer than `maxViewable`
+                float const x_trans = (-2.0f / 3.0f) + (i - lowerViewableIndex) * (1.0f / 3.0f);
 
                 glm::mat4 xfm = glm::mat4(1.0f);
                 xfm = glm::translate(xfm, glm::vec3(x_trans, 0.0f, 0.0f));
