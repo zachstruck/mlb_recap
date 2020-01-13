@@ -118,7 +118,7 @@ namespace
             [](auto const& ch) { return static_cast<char>(ch); });
         return feed;
 #else
-        std::filesystem::path const filename = "../res/schedule_2018-06-10.json";
+        std::filesystem::path const filename = "res/schedule_2018-06-10.json";
         return Mlb::readTextFile(filename);
 #endif
     }

@@ -52,16 +52,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\res\shaders\shader.vert">
+    <None Include="res\shaders\shader.vert">
       <Filter>Shader Files</Filter>
     </None>
-    <None Include="..\res\shaders\shader.frag">
+    <None Include="res\shaders\shader.frag">
       <Filter>Shader Files</Filter>
     </None>
-    <None Include="..\res\shaders\font.frag">
+    <None Include="res\shaders\font.frag">
       <Filter>Shader Files</Filter>
     </None>
-    <None Include="..\res\shaders\font.vert">
+    <None Include="res\shaders\font.vert">
       <Filter>Shader Files</Filter>
     </None>
   </ItemGroup>

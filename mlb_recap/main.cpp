@@ -512,12 +512,12 @@ int main()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         Mlb::Shader const shader(
-            "../res/shaders/shader.vert",
-            "../res/shaders/shader.frag");
+            "res/shaders/shader.vert",
+            "res/shaders/shader.frag");
 
         Mlb::Shader const shaderFont(
-            "../res/shaders/font.vert",
-            "../res/shaders/font.frag");
+            "res/shaders/font.vert",
+            "res/shaders/font.frag");
 
         glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(defaultWidth), 0.0f, static_cast<GLfloat>(defaultHeight));
         shaderFont.use();
@@ -533,7 +533,7 @@ int main()
         GLuint textureBg;
 
         {
-            ImageData const image("../res/images/mlb_ballpark.jpg");
+            ImageData const image("res/images/mlb_ballpark.jpg");
 
             // Cover the entire background
             std::array const vertices = {
@@ -658,7 +658,7 @@ int main()
             throw std::runtime_error("Failed to initialize freetype library");
         }
 
-        std::filesystem::path const& fontFilename = "../res/fonts/Roboto-Regular.ttf";
+        std::filesystem::path const& fontFilename = "res/fonts/Roboto-Regular.ttf";
         FT_Face face;
         if (FT_New_Face(ft, fontFilename.string().c_str(), 0, &face))
         {
