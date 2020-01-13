@@ -285,11 +285,6 @@ int main()
         {
             ImageData const image(mlbData[i].photo);
 
-            // Fit eight clips by default
-            // with equal padding on the left and right screen edges
-            float const x_l = -0.975f + (i * 0.25f);
-            float const x_r = x_l + 0.20f;
-
             // Some vertex data
             std::array const vertices = {
                 // positions          // texture coords
