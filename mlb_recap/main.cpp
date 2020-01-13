@@ -355,12 +355,19 @@ int main()
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
             }
             // Photo cuts
-            assert(upperViewableIndex - lowerViewableIndex + 1 <= maxViewable);
-            for (std::size_t i = lowerViewableIndex; i <= upperViewableIndex; ++i)
+            std::size_t const viewableCount = upperViewableIndex - lowerViewableIndex + 1;
+            assert(viewableCount <= maxViewable);
+            std::size_t const lower = lowerViewableIndex > 0 ? (lowerViewableIndex - 1) : 0;
+            std::size_t const upper = upperViewableIndex < (maxSelectableIndex - 1) ? (upperViewableIndex + 1) : upperViewableIndex;
+            for (std::size_t i = lower; i <= upper; ++i)
             {
-                // FIXME
-                // Does not properly distribute equally fewer than `maxViewable`
-                float const x_trans = (-2.0f / 3.0f) + (i - lowerViewableIndex) * (1.0f / 3.0f);
+                float const x_trans = [&]
+                {
+                    float const frac = 2.0f / (viewableCount + 1);
+                    int const offset = i - lowerViewableIndex;
+
+                    return -(1.0f - frac) + offset * frac;
+                }();
 
                 glm::mat4 xfm = glm::mat4(1.0f);
                 xfm = glm::translate(xfm, glm::vec3(x_trans, 0.0f, 0.0f));
