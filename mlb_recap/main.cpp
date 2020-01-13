@@ -4,6 +4,9 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include <stb/stb_image.h>
 
@@ -271,11 +274,11 @@ int main()
 
             // Some vertex data
             std::array const vertices = {
-                // positions        // texture coords
-                x_r,  0.1f, 0.0f,   1.0f, 1.0f,   // top right
-                x_r, -0.1f, 0.0f,   1.0f, 0.0f,   // bottom right
-                x_l, -0.1f, 0.0f,   0.0f, 0.0f,   // bottom left
-                x_l,  0.1f, 0.0f,   0.0f, 1.0f,   // top left
+                // positions          // texture coords
+                +0.1f, +0.1f, 0.0f,   1.0f, 1.0f,   // top right
+                +0.1f, -0.1f, 0.0f,   1.0f, 0.0f,   // bottom right
+                -0.1f, -0.1f, 0.0f,   0.0f, 0.0f,   // bottom left
+                -0.1f, +0.1f, 0.0f,   0.0f, 1.0f,   // top left
             };
             constexpr std::array<GLuint, 6> const indices[] = {
                 0, 1, 3, // first triangle
@@ -330,6 +333,10 @@ int main()
             shader.use();
             // Background
             {
+                glm::mat4 trans = glm::mat4(1.0f);
+                GLuint const transformLoc = glGetUniformLocation(shader.id(), "transform");
+                glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
                 glBindTexture(GL_TEXTURE_2D, textureBg);
                 glBindVertexArray(vaoBg);
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
@@ -337,10 +344,22 @@ int main()
             // Photo cuts
             for (std::size_t i = 0; i < mlbData.size(); ++i)
             {
-                if (i == selectedIndex)
+                if (i >= 5)
                 {
                     continue;
                 }
+
+                float const x_trans = (-2.0f / 3.0f) + i * (1.0f / 3.0f);
+
+                glm::mat4 xfm = glm::mat4(1.0f);
+                xfm = glm::translate(xfm, glm::vec3(x_trans, 0.0f, 0.0f));
+                if (i == selectedIndex)
+                {
+                    xfm = glm::scale(xfm, glm::vec3(1.5f, 1.5f, 1.0f));
+                }
+
+                GLuint const transformLoc = glGetUniformLocation(shader.id(), "transform");
+                glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(xfm));
 
                 glBindTexture(GL_TEXTURE_2D, textures[i]);
                 glBindVertexArray(vaos[i]);
