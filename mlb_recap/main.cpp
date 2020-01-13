@@ -16,6 +16,13 @@
 
 namespace
 {
+    // FIXME  Global state
+    std::size_t selectedIndex = 0;
+    std::size_t maxSelectableIndex{};
+}
+
+namespace
+{
     class GlfwInit final
     {
     public:
@@ -50,11 +57,28 @@ namespace
         glViewport(0, 0, width, height);
     }
 
-    void processInput(GLFWwindow* window)
+    void processInput(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        if (action == GLFW_RELEASE)
         {
-            glfwSetWindowShouldClose(window, true);
+            switch (key)
+            {
+            case GLFW_KEY_ESCAPE:
+                glfwSetWindowShouldClose(window, true);
+                break;
+            case GLFW_KEY_LEFT:
+                if (selectedIndex > 0)
+                {
+                    --selectedIndex;
+                }
+                break;
+            case GLFW_KEY_RIGHT:
+                if (selectedIndex < maxSelectableIndex)
+                {
+                    ++selectedIndex;
+                }
+                break;
+            }
         }
     }
 }
@@ -137,6 +161,11 @@ int main()
     {
         Mlb::MlbData const mlbData = Mlb::getFeedData();
 
+        // FIXME  Global state
+        maxSelectableIndex = !mlbData.empty() ?
+            mlbData.size() - 1 :
+            0;
+
         // Initialize GLFW in this scope
         GlfwInit const glfw;
 
@@ -152,6 +181,9 @@ int main()
 
         // Resize the viewport as necessary
         glfwSetFramebufferSizeCallback(window, frameBufferSizeCallback);
+
+        // Register a callback for keypresses
+        glfwSetKeyCallback(window, processInput);
 
         // Do GLAD loader
         if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
@@ -290,8 +322,6 @@ int main()
         // Loop until the user closes the window
         while (!glfwWindowShouldClose(window))
         {
-            processInput(window);
-
             // Render
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -307,6 +337,11 @@ int main()
             // Photo cuts
             for (std::size_t i = 0; i < mlbData.size(); ++i)
             {
+                if (i == selectedIndex)
+                {
+                    continue;
+                }
+
                 glBindTexture(GL_TEXTURE_2D, textures[i]);
                 glBindVertexArray(vaos[i]);
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
