@@ -66,7 +66,7 @@ namespace
         }
     };
 
-    void frameBufferSizeCallback(GLFWwindow* window, int width, int height)
+    void frameBufferSizeCallback([[maybe_unused]] GLFWwindow* window, int width, int height)
     {
         if (pShaderProjection != nullptr)
         {
@@ -78,7 +78,12 @@ namespace
         glViewport(0, 0, width, height);
     }
 
-    void processInput(GLFWwindow* window, int key, int scancode, int action, int mods)
+    void processInput(
+        GLFWwindow* window,
+        int key,
+        [[maybe_unused]] int scancode,
+        int action,
+        [[maybe_unused]] int mods)
     {
         if (action == GLFW_RELEASE)
         {

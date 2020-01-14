@@ -44,9 +44,9 @@ namespace
     class FtFace final
     {
     public:
-        FtFace(FT_Library library, std::filesystem::path const& filename, FT_Long face_index)
+        FtFace(FT_Library library, std::filesystem::path const& filename, FT_Long faceIndex)
         {
-            if (FT_New_Face(library, filename.string().c_str(), 0, &face_))
+            if (FT_New_Face(library, filename.string().c_str(), faceIndex, &face_))
             {
                 throw std::runtime_error("Failed to load font: " + filename.string());
             }
