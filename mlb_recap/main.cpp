@@ -1,5 +1,6 @@
 #include "feed_loader.hpp"
 #include "font_utility.hpp"
+#include "image_loader.hpp"
 #include "render_text.hpp"
 #include "shader.hpp"
 
@@ -9,16 +10,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <stb/stb_image.h>
-
 #include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstdlib>
-#include <memory>
 #include <stdexcept>
-#include <string>
-#include <string_view>
 
 namespace
 {
@@ -120,78 +116,6 @@ namespace
     }
 }
 
-namespace
-{
-    class ImageData final
-    {
-    public:
-        ImageData(std::vector<std::byte> const& rawData)
-        {
-            int nrChannels;
-            stbi_set_flip_vertically_on_load(true);
-            data_.reset(stbi_load_from_memory(
-                reinterpret_cast<stbi_uc const*>(rawData.data()), rawData.size(),
-                &width_, &height_, &nrChannels,
-                formatType_));
-
-            if (data_ == nullptr)
-            {
-                throw std::runtime_error("Failed to load image");
-            }
-        }
-
-        ImageData(std::filesystem::path const& filename)
-        {
-            int nrChannels;
-            stbi_set_flip_vertically_on_load(true);
-            data_.reset(stbi_load(
-                filename.string().c_str(),
-                &width_, &height_, &nrChannels,
-                formatType_));
-
-            if (data_ == nullptr)
-            {
-                throw std::runtime_error("Failed to load image");
-            }
-        }
-
-        unsigned char const* data() const noexcept
-        {
-            return data_.get();
-        }
-
-        int width() const noexcept
-        {
-            return width_;
-        }
-
-        int height() const noexcept
-        {
-            return height_;
-        }
-
-        auto formatType() const noexcept
-        {
-            return formatType_;
-        }
-
-    private:
-        constexpr static const auto formatType_ = STBI_rgb;
-
-        struct Deleter final
-        {
-            void operator()(stbi_uc* p) const noexcept
-            {
-                stbi_image_free(p);
-            }
-        };
-
-        std::unique_ptr<stbi_uc, Deleter> data_;
-        int width_{};
-        int height_{};
-    };
-}
-
 int main()
 {
     try
@@ -259,7 +183,7 @@ int main()
         GLuint textureBg;
 
         {
-            ImageData const image("res/images/mlb_ballpark.jpg");
+            Mlb::ImageData const image("res/images/mlb_ballpark.jpg");
 
             // Cover the entire background
             std::array const vertices = {
@@ -357,7 +281,7 @@ int main()
 
         for (std::size_t i = 0; i < mlbData.size(); ++i)
         {
-            ImageData const image(mlbData[i].photo);
+            Mlb::ImageData const image(mlbData[i].photo);
 
             // Load texture
             auto& texture = textures[i];

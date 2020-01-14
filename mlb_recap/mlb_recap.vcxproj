@@ -151,6 +151,7 @@
     <ClCompile Include="feed_loader.hpp" />
     <ClCompile Include="file_utility.cpp" />
     <ClCompile Include="font_utility.cpp" />
+    <ClCompile Include="image_loader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="render_text.cpp" />
     <ClCompile Include="shader.cpp" />
@@ -159,6 +160,7 @@
   <ItemGroup>
     <ClInclude Include="file_utility.hpp" />
     <ClInclude Include="font_utility.hpp" />
+    <ClInclude Include="image_loader.hpp" />
     <ClInclude Include="render_text.hpp" />
     <ClInclude Include="shader.hpp" />
   </ItemGroup>
