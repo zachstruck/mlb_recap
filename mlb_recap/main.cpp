@@ -12,9 +12,11 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
+#include <thread>
 
 namespace
 {
@@ -33,6 +35,8 @@ namespace
     std::size_t lowerViewableIndex{};
     std::size_t upperViewableIndex{};
     constexpr const std::size_t maxViewable = 5;
+
+    std::chrono::time_point<std::chrono::steady_clock> scaleTimeStart{};
 }
 
 namespace
@@ -102,6 +106,8 @@ namespace
                         --lowerViewableIndex;
                         --upperViewableIndex;
                     }
+
+                    scaleTimeStart = std::chrono::steady_clock::now();
                 }
                 break;
             case GLFW_KEY_RIGHT:
@@ -114,6 +120,8 @@ namespace
                         ++lowerViewableIndex;
                         ++upperViewableIndex;
                     }
+
+                    scaleTimeStart = std::chrono::steady_clock::now();
                 }
                 break;
             }
@@ -325,6 +333,9 @@ int main()
 
         Mlb::CharacterSet const characters = Mlb::loadCharacterSet("res/fonts/Roboto-Regular.ttf");
 
+        // Reset the scale timer to scale on load
+        scaleTimeStart = std::chrono::steady_clock::now();
+
         // Loop until the user closes the window
         while (!glfwWindowShouldClose(window))
         {
@@ -362,7 +373,18 @@ int main()
                 xfm = glm::translate(xfm, glm::vec3(x_trans, 0.0f, 0.0f));
                 if (i == selectedIndex)
                 {
-                    xfm = glm::scale(xfm, glm::vec3(1.5f, 1.5f, 1.0f));
+                    auto const lerp = [](float a, float b, float t)
+                    {
+                        return a + t * (b - a);
+                    };
+
+                    // Animate the scaling
+                    using namespace std::chrono_literals;
+                    auto const scaleProgress = (std::chrono::steady_clock::now() - scaleTimeStart) / 1.0s;
+                    float const linearInterpolation = lerp(1.0f, 1.5f, static_cast<float>(scaleProgress));
+                    float const scaleFactor = std::clamp(linearInterpolation, 1.0f, 1.5f);
+
+                    xfm = glm::scale(xfm, glm::vec3(scaleFactor, scaleFactor, 1.0f));
                 }
 
                 GLuint const transformLoc = glGetUniformLocation(shader.id(), "transform");
@@ -429,6 +451,10 @@ int main()
 
             // Poll for and process events
             glfwPollEvents();
+
+            // Sleep a bit
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(10ms);
         }
 
         // This needs RAII
