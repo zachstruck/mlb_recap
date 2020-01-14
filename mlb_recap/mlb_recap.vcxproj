@@ -152,12 +152,14 @@
     <ClCompile Include="file_utility.cpp" />
     <ClCompile Include="font_utility.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="render_text.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="stb_image.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="file_utility.hpp" />
     <ClInclude Include="font_utility.hpp" />
+    <ClInclude Include="render_text.hpp" />
     <ClInclude Include="shader.hpp" />
   </ItemGroup>
   <ItemGroup>
