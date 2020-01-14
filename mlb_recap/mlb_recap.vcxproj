@@ -148,7 +148,6 @@
   <ItemGroup>
     <ClCompile Include="..\ext\glad\glad_opengl_3_3_core\src\glad.c" />
     <ClCompile Include="feed_loader.cpp" />
-    <ClCompile Include="feed_loader.hpp" />
     <ClCompile Include="file_utility.cpp" />
     <ClCompile Include="font_utility.cpp" />
     <ClCompile Include="image_loader.cpp" />
@@ -158,6 +157,7 @@
     <ClCompile Include="stb_image.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="feed_loader.hpp" />
     <ClInclude Include="file_utility.hpp" />
     <ClInclude Include="font_utility.hpp" />
     <ClInclude Include="image_loader.hpp" />
