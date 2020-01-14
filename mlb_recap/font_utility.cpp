@@ -6,16 +6,51 @@
 #include <array>
 #include <filesystem>
 
+namespace
+{
+    class FreeTypeInit final
+    {
+    public:
+        FreeTypeInit()
+        {
+            if (FT_Init_FreeType(&ft_))
+            {
+                throw std::runtime_error("Failed to initialize freetype library");
+            }
+        }
+
+        // Disable copy semantics
+        FreeTypeInit(FreeTypeInit const& rhs) = delete;
+        FreeTypeInit& operator=(FreeTypeInit const& rhs) = delete;
+
+        // Disable move semantics
+        FreeTypeInit(FreeTypeInit&& rhs) noexcept = delete;
+        FreeTypeInit& operator=(FreeTypeInit&& rhs) noexcept = delete;
+
+        ~FreeTypeInit()
+        {
+            FT_Done_FreeType(ft_);
+        }
+
+        FT_Library const& get() const noexcept
+        {
+            return ft_;
+        }
+
+    private:
+        FT_Library ft_{};
+    };
+}
+
 Mlb::CharacterSet Mlb::loadCharacterSet(std::filesystem::path const& filename)
 {
-    FT_Library ft;
-    if (FT_Init_FreeType(&ft))
-    {
-        throw std::runtime_error("Failed to initialize freetype library");
-    }
+    // FIXME
+    // Need to move this initialization of this function
+    // to avoid redoing work for every load
+    FreeTypeInit const freeType;
 
     FT_Face face;
-    if (FT_New_Face(ft, filename.string().c_str(), 0, &face))
+    if (FT_New_Face(freeType.get(), filename.string().c_str(), 0, &face))
     {
         throw std::runtime_error("Failed to load font: " + filename.string());
     }
@@ -70,7 +105,6 @@ Mlb::CharacterSet Mlb::loadCharacterSet(std::filesystem::path const& filename)
 
     // This needs RAII
     FT_Done_Face(face);
-    FT_Done_FreeType(ft);
 
     return characters;
 }
