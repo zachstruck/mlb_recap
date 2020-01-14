@@ -348,9 +348,9 @@ int main()
                 float const x_trans = [&]
                 {
                     float const frac = 2.0f / (viewableCount + 1);
-                    int const offset = i - lowerViewableIndex;
+                    std::size_t const offset = i - lowerViewableIndex;
 
-                    return -(1.0f - frac) + offset * frac;
+                    return -(1.0f - frac) + static_cast<int>(offset) * frac;
                 }();
 
                 glm::mat4 xfm = glm::mat4(1.0f);
@@ -378,9 +378,9 @@ int main()
                 float const textX = [&]
                 {
                     float const frac = 2.0f / (viewableCount + 1);
-                    int const offset = selectedIndex - lowerViewableIndex;
+                    std::size_t const offset = selectedIndex - lowerViewableIndex;
 
-                    float const x = -(1.0f - frac) + offset * frac;
+                    float const x = -(1.0f - frac) + static_cast<int>(offset) * frac;
 
                     return ((x + 1.0f) / 2.0f) * width;
                 }();
@@ -434,7 +434,7 @@ int main()
         glDeleteVertexArrays(1, &vaoPhoto);
         glDeleteBuffers(1, &vboPhoto);
         glDeleteBuffers(1, &eboPhoto);
-        glDeleteTextures(textures.size(), textures.data());
+        glDeleteTextures(static_cast<GLsizei>(textures.size()), textures.data());
         glDeleteBuffers(1, &vboFont);
     }
     catch (std::exception const& ex)

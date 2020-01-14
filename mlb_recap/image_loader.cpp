@@ -10,7 +10,8 @@ Mlb::ImageData::ImageData(std::vector<std::byte> const& rawData)
     int nrChannels;
     stbi_set_flip_vertically_on_load(true);
     data_.reset(stbi_load_from_memory(
-        reinterpret_cast<stbi_uc const*>(rawData.data()), rawData.size(),
+        reinterpret_cast<stbi_uc const*>(rawData.data()),
+        static_cast<int>(rawData.size()),
         &width_, &height_, &nrChannels,
         formatType_));
 

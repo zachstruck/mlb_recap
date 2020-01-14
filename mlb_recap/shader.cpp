@@ -25,7 +25,7 @@ Mlb::Shader::Shader(
             glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
 
             std::string infoLog(logLength, '\0');
-            glGetShaderInfoLog(shader, infoLog.size(), nullptr, infoLog.data());
+            glGetShaderInfoLog(shader, static_cast<GLsizei>(infoLog.size()), nullptr, infoLog.data());
 
             throw std::runtime_error(infoLog);
         }
@@ -42,7 +42,7 @@ Mlb::Shader::Shader(
             glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
 
             std::string infoLog(logLength, '\0');
-            glGetShaderInfoLog(program, infoLog.size(), nullptr, infoLog.data());
+            glGetShaderInfoLog(program, static_cast<GLsizei>(infoLog.size()), nullptr, infoLog.data());
 
             throw std::runtime_error(infoLog);
         }
