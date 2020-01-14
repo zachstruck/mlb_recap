@@ -3,6 +3,10 @@
 #include "font_utility.hpp"
 #include "shader.hpp"
 
+// NOTE
+// Functionality heavily borrowed from a tutorial
+// https://learnopengl.com/In-Practice/Text-Rendering
+
 void Mlb::renderHeadlineText(
     GLuint vao, GLuint vbo,
     Mlb::CharacterSet const& charSet,
