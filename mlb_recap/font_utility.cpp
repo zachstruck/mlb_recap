@@ -32,13 +32,51 @@ namespace
             FT_Done_FreeType(ft_);
         }
 
-        FT_Library const& get() const noexcept
+        operator FT_Library() const noexcept
         {
             return ft_;
         }
 
     private:
         FT_Library ft_{};
+    };
+
+    class FtFace final
+    {
+    public:
+        FtFace(FT_Library library, std::filesystem::path const& filename, FT_Long face_index)
+        {
+            if (FT_New_Face(library, filename.string().c_str(), 0, &face_))
+            {
+                throw std::runtime_error("Failed to load font: " + filename.string());
+            }
+        }
+
+        // Disable copy semantics
+        FtFace(FtFace const& rhs) = delete;
+        FtFace& operator=(FtFace const& rhs) = delete;
+
+        // Disable move semantics
+        FtFace(FtFace&& rhs) noexcept = delete;
+        FtFace& operator=(FtFace&& rhs) noexcept = delete;
+
+        ~FtFace()
+        {
+            FT_Done_Face(face_);
+        }
+
+        operator FT_Face() const noexcept
+        {
+            return face_;
+        }
+
+        FT_Face const& get() const noexcept
+        {
+            return face_;
+        }
+
+    private:
+        FT_Face face_{};
     };
 }
 
@@ -49,11 +87,7 @@ Mlb::CharacterSet Mlb::loadCharacterSet(std::filesystem::path const& filename)
     // to avoid redoing work for every load
     FreeTypeInit const freeType;
 
-    FT_Face face;
-    if (FT_New_Face(freeType.get(), filename.string().c_str(), 0, &face))
-    {
-        throw std::runtime_error("Failed to load font: " + filename.string());
-    }
+    FtFace const face(freeType, filename, 0);
 
     // Set the font size
     FT_Set_Pixel_Sizes(face, 0, 24);
@@ -78,12 +112,12 @@ Mlb::CharacterSet Mlb::loadCharacterSet(std::filesystem::path const& filename)
             GL_TEXTURE_2D,
             0,
             GL_RED,
-            face->glyph->bitmap.width,
-            face->glyph->bitmap.rows,
+            face.get()->glyph->bitmap.width,
+            face.get()->glyph->bitmap.rows,
             0,
             GL_RED,
             GL_UNSIGNED_BYTE,
-            face->glyph->bitmap.buffer
+            face.get()->glyph->bitmap.buffer
         );
 
         // Set texture options
@@ -95,16 +129,13 @@ Mlb::CharacterSet Mlb::loadCharacterSet(std::filesystem::path const& filename)
         // Cache the glyph
         characters[c] = Character{
             texture,
-            glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-            glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-            static_cast<GLuint>(face->glyph->advance.x),
+            glm::ivec2(face.get()->glyph->bitmap.width, face.get()->glyph->bitmap.rows),
+            glm::ivec2(face.get()->glyph->bitmap_left, face.get()->glyph->bitmap_top),
+            static_cast<GLuint>(face.get()->glyph->advance.x),
         };
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    // This needs RAII
-    FT_Done_Face(face);
 
     return characters;
 }
